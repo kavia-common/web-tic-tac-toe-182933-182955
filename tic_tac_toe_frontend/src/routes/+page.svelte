@@ -65,6 +65,19 @@
     function isWinningIndex(i: number) {
         return winningLine.includes(i);
     }
+
+    // Map player -> Unicode chess glyph and accessible names
+    function glyphFor(cell: Cell): string {
+        // Prefer white pieces for clarity
+        if (cell === 'X') return '♘'; // Knight
+        if (cell === 'O') return '♕'; // Queen
+        return '';
+    }
+    function ariaFor(cell: Cell): string {
+        if (cell === 'X') return 'knight';
+        if (cell === 'O') return 'queen';
+        return 'empty';
+    }
 </script>
 
 <svelte:head>
@@ -83,11 +96,11 @@
             {#if winner}
                 <span class="badge badge-win" data-testid="status-winner">Player {winner} wins!</span>
             {:else if isDraw}
-                <span class="badge badge-draw" data-testid="status-draw">It&apos;s a draw.</span>
+                <span class="badge badge-draw" data-testid="status-draw">It's a draw.</span>
             {:else}
                 <span class="turn" data-testid="status-turn">
                     <span class="dot" aria-hidden="true"></span>
-                    Player <strong class="turn-player">{currentPlayer}</strong>&apos;s turn
+                    Player <strong class="turn-player">{currentPlayer}</strong>'s turn
                 </span>
             {/if}
         </section>
@@ -103,12 +116,18 @@
                     <button
                         class="cell {cell ? 'filled' : ''} {isWinningIndex(i) ? 'win' : ''}"
                         role="gridcell"
-                        aria-label={cell ? `Cell ${i + 1}, ${cell}` : `Cell ${i + 1}, empty`}
+                        aria-label={`Cell ${i + 1}, ${ariaFor(cell)}`}
                         aria-disabled={gameOver || cell !== ''}
                         disabled={gameOver || cell !== ''}
                         on:click={() => handleCellClick(i)}
                     >
-                        <span class="mark" data-testid={`cell-${i}`}>{cell}</span>
+                        <span
+                            class="mark {cell === 'X' ? 'player-x' : ''} {cell === 'O' ? 'player-o' : ''}"
+                            data-testid={`cell-${i}`}
+                            aria-hidden={cell === ''}
+                        >
+                            {glyphFor(cell)}
+                        </span>
                     </button>
                 {/each}
             </div>
@@ -307,6 +326,7 @@
         transform: translateY(-2px) scale(1.02);
     }
 
+    /* Mark now represents a chess icon. Keep sizing responsive and theme-aware. */
     .mark {
         font-weight: 900;
         font-size: calc(var(--cell-size) * 0.48);
@@ -314,14 +334,27 @@
         color: var(--text);
         transition: transform var(--transition), color var(--transition);
         user-select: none;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
 
+    /* Smooth transition for empty cells */
     .cell:not(.filled) .mark {
         color: transparent;
     }
 
     .cell.filled .mark {
         color: var(--text);
+    }
+
+    /* Differentiate players with subtle theme accents for better contrast */
+    .cell.filled .mark.player-x { /* Knight */
+        color: var(--text);
+        text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .cell.filled .mark.player-o { /* Queen */
+        color: var(--primary);
+        text-shadow: 0 1px 0 rgba(255,255,255,0.6);
     }
 
     .actions {
